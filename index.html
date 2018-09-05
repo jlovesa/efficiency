@@ -1,0 +1,487 @@
+<meta charset='utf-8'>
+<script src="https://d3js.org/d3.v4.min.js?v"></script>
+<script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<body></body>
+<script>
+
+// INITIAL SETTINGS
+var buf = 15;
+var ww = window.innerWidth;
+var wh = window.innerHeight;
+var displaysz = {
+    'width': ww-buf,
+    'height': wh-buf
+}
+var container = d3.select('body').append('svg')
+    .attr('height', wh)
+    .attr('width', ww)
+var red = '#ff9999';
+var green = '#a1ff87';
+
+// MACHINE ENTRY
+var textbox = container.append('g')
+    .attrs({displaysz})
+    .attr('id', 'textbox');
+var nparts = 1;
+var nmachines = 2;
+var partnum = textbox.append('text')
+    .attrs({
+        x: buf,
+        y: buf + 20,
+        'font-family': 'Arial',
+        'font-size': 30,
+        class: 'entry'
+    })
+    .styles({
+        'font-weight': 'bold',
+        '-webkit-user-select': 'none'
+    })
+    .text(uparts);
+var mnum = textbox.append('text')
+    .attrs({
+        x: buf,
+        y: buf + 80,
+        'font-family': 'Arial',
+        'font-size': 30,
+        class: 'entry'
+    })
+    .styles({
+        'font-weight': 'bold',
+        '-webkit-user-select': 'none'
+    })
+    .text(umachines);
+var pinc = textbox.append('circle')
+    .attrs({
+        cx: buf + 150,
+        cy: buf + 10,
+        r: 20,
+        class: 'entry'
+    })
+    .styles({
+        'fill': '#99efeb',
+    })
+    .on('click', function () {
+        nparts++;
+        partnum.text(uparts);
+    })
+var pinctxt = textbox.append('text')
+    .attrs({
+        x: buf + 150,
+        y: buf + 20,
+        'font-family': 'Arial',
+        'font-size': 30,
+        class: 'entry'
+    })
+    .styles({
+        'font-weight': 'bold',
+        'text-anchor': 'middle',
+        '-webkit-user-select': 'none'
+    })
+    .text('+')
+    .on('click', function () {
+        nparts++;
+        partnum.text(uparts);
+    })
+var pdec = textbox.append('circle')
+    .attrs({
+        cx: buf + 200,
+        cy: buf + 10,
+        r: 20,
+        class: 'entry'
+    })
+    .style('fill', '#99efeb')
+    .on('click', function () {
+        nparts--;
+        partnum.text(uparts);
+    })
+var pdectxt = textbox.append('text')
+    .attrs({
+        x: buf + 200,
+        y: buf + 18,
+        'font-family': 'Arial',
+        'font-size': 30,
+        class: 'entry'
+    })
+    .styles({
+        'font-weight': 'bold',
+        'text-anchor': 'middle',
+        '-webkit-user-select': 'none'
+    })
+    .on('click', function () {
+        nparts--;
+        partnum.text(uparts);
+    })
+    .text('-')
+var minc = textbox.append('circle')
+    .attrs({
+        cx: buf + 210,
+        cy: buf + 70,
+        r: 20,
+        class: 'entry'
+    })
+    .styles({
+        'fill': '#99efeb'
+    })
+    .on('click', function () {
+        nmachines++;
+        mnum.text(umachines);
+    })
+var minctxt = textbox.append('text')
+    .attrs({
+        x: buf + 210,
+        y: buf + 80,
+        'font-family': 'Arial',
+        'font-size': 30,
+        class: 'entry'
+    })
+    .styles({
+        'font-weight': 'bold',
+        'text-anchor': 'middle',
+        '-webkit-user-select': 'none'
+    })
+    .text('+')
+    .on('click', function () {
+        nmachines++;
+        mnum.text(umachines);
+    })
+var mdec = textbox.append('circle')
+    .attrs({
+        cx: buf + 260,
+        cy: buf + 70,
+        r: 20,
+        class: 'entry'
+    })
+    .style('fill', '#99efeb')
+    .on('click', function () {
+        nmachines--;
+        mnum.text(umachines);
+    })
+var pdectxt = textbox.append('text')
+    .attrs({
+        x: buf + 260,
+        y: buf + 78,
+        'font-family': 'Arial',
+        'font-size': 30,
+        class: 'entry'
+    })
+    .styles({
+        'font-weight': 'bold',
+        'text-anchor': 'middle',
+        '-webkit-user-select': 'none'
+    })
+    .on('click', function () {
+        nmachines--;
+        mnum.text(umachines);
+    })
+    .text('-')
+var finsetup = textbox.append('rect')
+    .attrs({
+        x: buf,
+        y: buf + 120,
+        'fill': '#99efeb',
+        'width': 300,
+        'height': 50,
+        class: 'entry'
+    })
+    .on('click', starttime)
+var fintext = textbox.append('text')
+    .attrs({
+        x: buf + 140,
+        y: buf + 152,
+        'font-family': 'Arial',
+        'font-size': 25,
+        class: 'entry'
+    })
+    .styles({
+        'font-weight': 'bold',
+        'text-anchor': 'middle',
+        '-webkit-user-select': 'none'
+    })
+    .text('Finish Setup')
+    .on('click', starttime)
+function uparts() { return "Parts: " + nparts; }
+function umachines() { return "Machines: " + nmachines; }
+var timeon = false;
+var firsttime = true;
+var savetime;
+var machnum = 1;
+var timetable = [];
+
+// TIMING MECHANISM
+
+function starttime() {
+    d3.selectAll('.entry').remove();
+var headertext = container.append('text')
+    .attrs({
+        x: (ww-buf)/2,
+        y: 40,
+        'font-family': 'Arial',
+        'font-size': 25,
+        class: 'timer',
+        id: 'headertext'
+    })
+    .styles({
+        'font-weight': 'bold',
+        'text-anchor': 'middle',
+        '-webkit-user-select': 'none'
+    })
+    .text('Machine 1')
+var button = container.append('rect')
+    .attrs({
+        'fill': green,
+        'width': ww-(4*buf),
+        'height': (wh-buf)/2,
+        x: 2*buf,
+        y: 60,
+        class: 'timer',
+        id: 'button'
+    })
+    .on('click', function () { timeon?tstop():tstart() });
+var buttontext = container.append('text')
+    .attrs({
+        x: (ww-buf)/2,
+        y: (wh/4)+(4*buf),
+        'font-family': 'Arial',
+        'font-size': 30,
+        class: 'timer',
+        id: 'buttontext'
+    })
+    .styles({
+        'font-weight': 'bold',
+        'text-anchor': 'middle',
+        '-webkit-user-select': 'none'
+    })
+    .text('Start')
+    .on('click', function () { timeon?tstop():tstart() });
+var footer = container.append('rect')
+    .attrs({
+        'fill': 'white',
+        'width': ww-(4*buf),
+        'height': 50,
+        x: 2*buf,
+        y: 60+(wh-buf)/2+buf,
+        class: 'timer',
+        id: 'footer'
+    })
+    .on('click', finmachine);
+var footertext = container.append('text')
+    .attrs({
+        x: (ww-buf)/2,
+        y: 60+(wh-buf)/2+3*buf,
+        'font-family': 'Arial',
+        'font-size': 20,
+        class: 'timer',
+        id: 'footertext'
+    })
+    .styles({
+        'font-weight': 'bold',
+        'text-anchor': 'middle',
+        '-webkit-user-select': 'none'
+    })
+    .text('');
+}
+
+
+
+function tstart() {
+    var d = new Date();
+    savetime = d.getTime();
+    timeon = true;
+    d3.select('#button').attr('fill', red);
+    d3.select('#buttontext').text('Stop');
+    d3.select('#footertext').text('')
+    d3.select('#footer').attr('fill', 'white')
+}
+
+function tstop () {
+    var d = new Date();
+    var diff = d.getTime() - savetime;
+    timetable.push({t:diff, c:'MOO', m:machnum})
+    timeon = false;
+    d3.select('#button').attr('fill', green);
+    d3.select('#buttontext').text('Start');
+    d3.select('#footer').attr('fill', red)
+        .on('click', finmachine);
+    d3.select('#footertext').text('Finish Machine')
+        .on('click', finmachine);
+}
+
+function finmachine () {
+    timetable[timetable.length - 1].c = 'FINISH';
+    if (machnum == nmachines) {
+        calctime();
+    } else {
+        machnum += 1;
+        d3.select('#headertext').text(function () { return 'Machine ' + machnum });
+    }
+}
+
+// CALLBACK
+function calctime() {
+    $.ajax({
+        url: '/sendto',
+        type: 'POST',
+        data: JSON.stringify(timetable),
+        success: function (res) {
+            printcodes(res);
+        },
+        error: function (error) { console.log(error) }
+    })
+}
+
+// DISPLAY MECHANISM
+var globalres;
+function printcodes(res) {
+    globalres = res;
+d3.selectAll('.timer').remove();
+var startbutton = textbox.append('rect')
+    .attrs({
+        'fill': green,
+        x: buf,
+        'width': ww-(2*buf),
+        'height': 100,
+        class: 'display',
+        id: 'startbutton'
+    })
+    .on('click', startseq);
+var starttext = textbox.append('text')
+    .attrs({
+        x: (ww-buf)/2,
+        y: 60,
+        'font-family': 'Arial',
+        'font-size': 25,
+        class: 'display',
+        id: 'startbutton'
+    })
+    .styles({
+        'font-weight': 'bold',
+        'text-anchor': 'middle',
+        '-webkit-user-select': 'none'
+    })
+    .text('Start Sequence')
+    .on('click', startseq);
+}
+
+var globaltimes;
+var globalseq;
+function startseq() {
+    d3.selectAll('#startbutton').remove();
+globalseq = JSON.parse(globalres);
+var times = Object.keys(globalseq);
+for (var i = 0; i < times.length; i++) {
+    times[i] = parseInt(times[i]);
+}
+times.sort();
+globaltimes = times;
+runseq();
+var finbutton = textbox.append('rect')
+    .attrs({
+        'fill': red,
+        'width': ww-(4*buf),
+        'height': 50,
+        x: 2*buf,
+        y: 250,
+        class: 'display'
+    })
+    .on('click', finishjob);
+var finbuttontext = textbox.append('text')
+    .attrs({
+        x: ((ww-(4*buf))/2)+(2*buf),
+        y: 280,
+        'font-family': 'Arial',
+        'text-anchor': 'middle',
+        'font-size': 20,
+        class: 'display'
+    })
+    .styles({
+        'font-weight': 'bold',
+        '-webkit-user-select': 'none'
+    })
+    .text('Finish job')
+    .on('click', finishjob);
+var upnowtext = textbox.append('text')
+    .attrs({
+        x: 0,
+        y: 50,
+        'font-family': 'Arial',
+        'font-size': 20,
+        class: 'display'
+    })
+    .styles({
+        'font-weight': 'bold',
+        '-webkit-user-select': 'none'
+    })
+    .text('Up now: ');
+var upnow = textbox.append('text')
+    .attrs({
+        x: 90,
+        y: 50,
+        'font-family': 'Arial',
+        'font-size': 50,
+        class: 'display',
+        id: 'upnow'
+    })
+    .styles({
+        'font-weight': 'bold',
+        '-webkit-user-select': 'none'
+    })
+var upnexttext = textbox.append('text')
+    .attrs({
+        x: 0,
+        y: 140,
+        'font-family': 'Arial',
+        'font-size': 20,
+        class: 'display'
+    })
+    .styles({
+        'font-weight': 'bold',
+        '-webkit-user-select': 'none'
+    })
+    .text('Up next: ');
+var upnext = textbox.append('text')
+    .attrs({
+        x: 90,
+        y: 140,
+        'font-family': 'Arial',
+        'font-size': 20,
+        class: 'display',
+        id: 'upnext'
+    })
+    .styles({
+        'font-weight': 'bold',
+        '-webkit-user-select': 'none'
+    })
+}
+
+function runseq() {
+    for (var j = 0; j < globaltimes.length; j++) {
+        var code = globaltimes[j];
+        var nextcode = j + 1;
+        if (nextcode < globaltimes.length) { nextcode = globaltimes[j+1]; }
+        else { nextcode = 0 }
+        printCodes(globalseq, code, nextcode);
+    }
+}
+
+function printCodes(seq, code, nextcode) {
+    setTimeout( function () {
+        d3.select('#upnow').text(seq[code]);
+        if (nextcode != 0) {
+            d3.select('#upnext').text(seq[nextcode]);
+        }
+        else {
+            d3.select('#upnext').text(seq[0]);
+            setTimeout(runseq, 20000);
+        }
+    }, 1000*code);
+}
+
+// RESET
+
+function finishjob() {
+    d3.select('.display').remove();
+    location.reload();
+}
+
+</script>
